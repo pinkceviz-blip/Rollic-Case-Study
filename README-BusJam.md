@@ -14,7 +14,7 @@ A portrait Unity puzzle game: select passengers with a clear route, match them t
 - Ten mixed-color levels, all available from the Levels menu.
 - Each level starts with at least 15 visible passengers. Buses carry three passengers; the temporary waiting area has six places.
 - Only passengers with a clear orthogonal route can be selected. Rapid consecutive selections are supported; accepted moves reserve their destinations.
-- New and restarted levels start the timer on the first valid selection. Menus, pause and application backgrounding stop it.
+- New and restarted levels start the timer on the first valid selection. Menus, pause and application backgrounding stop it. Continuing a started game waits for a tap in the gameplay area before resuming the saved countdown and animations.
 - Levels 5–10 include three bottom entrances, each showing its remaining hidden passengers. An entrance refills an existing rear passenger cell only when it is vacant and the entry route is clear. Entrances do not create extra rows. Empty passenger squares are hidden.
 - Passengers appear in bus seats after boarding. Buses have animated doors and a visible incoming queue.
 - Pause, retry, restart confirmation, success, level selection and runtime error dialogs use the illustrated UI.

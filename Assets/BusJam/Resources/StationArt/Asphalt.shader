@@ -11,6 +11,7 @@ Shader "BusJam/Asphalt"
             #pragma vertex vert
             #pragma fragment frag
             #include "UnityCG.cginc"
+ #include "../BusJam/StationLighting.cginc"
  float _BusJamDark;
  half4 ThemeColor(float3 color,float alpha){return half4(color*lerp(float3(1,1,1),float3(.48,.59,.82),_BusJamDark),alpha);}
             struct App { float4 vertex:POSITION; };
@@ -27,7 +28,7 @@ Shader "BusJam/Asphalt"
                 float patches=noise(p*.75)-.5;
                 float nearTrack=(p.y-5.2)/.8,farTrack=(p.y-8.0)/.8;
                 float wear=exp(-nearTrack*nearTrack)*.012+exp(-farTrack*farTrack)*.012;
-                return ThemeColor(_Color.rgb+grain*.028+aggregate*.020+patches*.016+wear,1);
+                half4 result=ThemeColor(_Color.rgb+grain*.028+aggregate*.020+patches*.016+wear,1);result.rgb+=StationLampLight(i.world,float3(0,1,0));return result;
             }
             ENDHLSL
         }

@@ -14,6 +14,8 @@ namespace Rollic.BusJam
         Font font;RectTransform layout,page;GameObject homeLogo,playButton,homeHint,pageDim,rechargePopup;MenuCityView city;
         Action play,restart;Action<int> chooseLevel;int current,total,completed;float seconds;bool resumed;string levelTitle;float safeTop,safeBottom;int selectedTab=2;
         readonly List<Image> tabFaces=new List<Image>();
+        readonly List<Text> tabCaptions=new List<Text>();
+        readonly List<Vector2> nativeTabLines=new List<Vector2>();bool? navigationEnglish;
         public void Initialize(int level,int count,int done,string title,float time,bool hasProgress,Action onPlay,Action onRestart,Action<int> onLevel)
         {
             current=level;total=count;completed=done;seconds=time;resumed=hasProgress;levelTitle=title;play=onPlay;restart=onRestart;chooseLevel=onLevel;font=Resources.Load<Font>("Fonts/Nunito-Black")??Resources.Load<Font>("Fonts/Nunito-ExtraBold")??Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -117,9 +119,11 @@ namespace Rollic.BusJam
             Hit(hud,"Profil",new Vector2(.5f,.5f),new Vector2(-354,0),new Vector2(124,141),()=>ShowPage(2));
             Hit(hud,"HAK SÜRESİ",new Vector2(.5f,.5f),new Vector2(354,0),new Vector2(124,141),ShowLivesRecharge);
             clockShade=Plate(hud,"Recharge clock dim",new Vector2(.5f,.5f),new Vector2(354,0),new Vector2(128,134),Color.white,Color.white,true);
-            var levelCaptionBack=Plate(hud,"Level caption background",new Vector2(.5f,1),new Vector2(-105,-29),new Vector2(155,32),new Color(.025f,.31f,.76f),new Color(.025f,.31f,.76f));
+            var levelCaptionBack=Plate(hud,"Level caption background",new Vector2(.5f,1),new Vector2(-105,-29),new Vector2(155,44),new Color(.025f,.31f,.76f),new Color(.025f,.31f,.76f));
             levelCaptionBack.gameObject.AddComponent<EnglishOnlyLabel>();
-            Text(levelCaptionBack.transform,"BÖLÜM",24,new Vector2(0,-16),new Vector2(155,32));
+            var levelTitle=Text(levelCaptionBack.transform,"BÖLÜM",24,new Vector2(0,-22),new Vector2(155,44),new Color(1,.94f,.76f));levelTitle.alignByGeometry=true;
+            levelTitle.verticalOverflow=VerticalWrapMode.Overflow;
+            var levelTitleOutline=levelTitle.GetComponent<Outline>();levelTitleOutline.effectColor=new Color(.24f,.13f,.055f,.95f);levelTitleOutline.effectDistance=new Vector2(1,-2);
             var levelValue=Text(hud,(current+1)+" / "+total,32,new Vector2(-105,-70.5f),new Vector2(170,50));levelValue.alignByGeometry=true;
             var heartTitle=Text(hud,"KALAN HAK",24,new Vector2(95,-29),new Vector2(200,38),new Color(1,.94f,.76f));heartTitle.alignByGeometry=true;
             var titleOutline=heartTitle.GetComponent<Outline>();titleOutline.effectColor=new Color(.24f,.13f,.055f,.95f);titleOutline.effectDistance=new Vector2(1,-2);
@@ -128,14 +132,14 @@ namespace Rollic.BusJam
             var timerPlate=Plate(hud,"Clock countdown inset",new Vector2(.5f,1),new Vector2(354,-70.5f),new Vector2(124,38),new Color(.025f,.24f,.49f),new Color(.015f,.13f,.34f));
             livesTimer=Text(hud,"",22,new Vector2(354,-70.5f),new Vector2(118,34));livesTimer.alignByGeometry=true;UpdateLives();
         }
-        void Update(){var backdrop=GetComponent<Image>();if(backdrop)backdrop.color=GamePreferences.Dark?new Color(.025f,.055f,.14f):new Color(.09f,.72f,.91f);if(Time.unscaledTime>=nextLivesRefresh){nextLivesRefresh=Time.unscaledTime+.5f;UpdateLives();}}
+        void Update(){if(navigationEnglish!=GamePreferences.English&&tabFaces.Count==5)RefreshNavigationLanguage();var backdrop=GetComponent<Image>();if(backdrop)backdrop.color=GamePreferences.Dark?new Color(.025f,.055f,.14f):new Color(.09f,.72f,.91f);if(Time.unscaledTime>=nextLivesRefresh){nextLivesRefresh=Time.unscaledTime+.5f;UpdateLives();}}
         void UpdateLives()
         {
             if(!livesValue)return;var state=LivesService.GetState();livesValue.text=state.count.ToString();
             livesTimer.text=state.count<LivesService.Maximum?LivesService.Remaining(state,LivesService.UtcNow):GamePreferences.Translate("DOLU");
             if(clockShade)clockShade.color=state.count<LivesService.Maximum?new Color(.015f,.035f,.08f,.50f):Color.clear;
-            if(rechargePopupTimer)rechargePopupTimer.text=state.count<LivesService.Maximum?LivesService.Remaining(state,LivesService.UtcNow):"HAKLARIN DOLU";
-            if(rechargePopupCount)rechargePopupCount.text="Kalan hak: "+state.count+" / "+LivesService.Maximum;
+            if(rechargePopupTimer)rechargePopupTimer.text=state.count<LivesService.Maximum?LivesService.Remaining(state,LivesService.UtcNow):GamePreferences.Translate("HAKLARIN DOLU");
+            if(rechargePopupCount)rechargePopupCount.text=GamePreferences.Translate("Kalan hak: "+state.count+" / "+LivesService.Maximum);
         }
         void ShowLivesRecharge()
         {
@@ -181,6 +185,13 @@ namespace Rollic.BusJam
             button.name=resumed?"DEVAM ET":"BÖLÜM "+(current+1);playButton=button.gameObject;
             homeHint=Rect(layout,"Home hint placeholder",new Vector2(.5f,0),new Vector2(.5f,0),Vector2.zero,Vector2.zero).gameObject;
         }
+        Sprite NavigationCaptionSurface()
+        {
+            const string key="Localized navigation blue";if(spriteCache.TryGetValue(key,out var cached))return cached;
+            var texture=new Texture2D(1,32,TextureFormat.RGBA32,false){filterMode=FilterMode.Bilinear,wrapMode=TextureWrapMode.Clamp};
+            for(int y=0;y<32;y++){float t=y/31f;texture.SetPixel(0,y,t<.25f?Color.Lerp(new Color(2f/255,95f/255,220f/255),new Color(1f/255,77f/255,194f/255),t*4):Color.Lerp(new Color(1f/255,77f/255,194f/255),new Color(1f/255,80f/255,195f/255),(t-.25f)/.75f));}
+            texture.Apply();textures.Add(texture);var sprite=Sprite.Create(texture,new Rect(0,0,1,32),new Vector2(.5f,.5f));sprites.Add(sprite);spriteCache[key]=sprite;return sprite;
+        }
         void Navigation()
         {
             var panel=Artwork(layout,"Illustrated navigation","NavigationBar",new Vector2(.5f,0),new Vector2(0,97+safeBottom),new Vector2(870,186),new Rect(14f/2172,125f/724,2145f/2172,458f/724));
@@ -191,14 +202,29 @@ namespace Rollic.BusJam
             {
                 int tab=i;float x=(i-2)*174;
                 Hit(panel,labels[i],new Vector2(.5f,.5f),new Vector2(x,0),new Vector2(174,186),()=>ShowPage(tab));
-                var captionBack=Plate(panel,"Navigation caption background",new Vector2(.5f,0),new Vector2(x,40),new Vector2(166,58),new Color(.025f,.31f,.76f),new Color(.025f,.31f,.76f));
-                captionBack.sprite=null;captionBack.gameObject.AddComponent<EnglishOnlyLabel>();
-                Text(captionBack.transform,labels[i],24,new Vector2(0,-29),new Vector2(166,40));
                 float artworkScale=870f/2145f;
                 float underlineX=((wordLeft[i]+wordRight[i])*.5f-14)*artworkScale-435;
                 float underlineWidth=(wordRight[i]-wordLeft[i]+1)*artworkScale;
+                // Match the illustration's blue gradient, with opaque coverage for its baked Turkish letters.
+                var captionBack=Rect(panel,"Navigation caption background",new Vector2(.5f,0),new Vector2(.5f,0),new Vector2(underlineX,44),new Vector2(underlineWidth+24,44));
+                var captionFill=captionBack.gameObject.AddComponent<Image>();captionFill.sprite=NavigationCaptionSurface();captionFill.raycastTarget=false;
+                captionBack.gameObject.AddComponent<EnglishOnlyLabel>();
+                var caption=Text(captionBack.transform,labels[i],28,new Vector2(0,-22),new Vector2(164,44),new Color(1,.98f,.87f));
+                caption.alignByGeometry=true;caption.verticalOverflow=VerticalWrapMode.Overflow;tabCaptions.Add(caption);
                 var indicator=Plate(panel,"Selected tab "+i,new Vector2(.5f,0),new Vector2(underlineX,27),new Vector2(underlineWidth,7),gold,gold);
-                indicator.color=i==2?gold:Color.clear;tabFaces.Add(indicator);
+                indicator.color=i==2?gold:Color.clear;tabFaces.Add(indicator);nativeTabLines.Add(new Vector2(underlineX,underlineWidth));
+            }
+        }
+        void RefreshNavigationLanguage()
+        {
+            navigationEnglish=GamePreferences.English;
+            string[] labels={"REHBER","GARAJ","ANA SAYFA","BÖLÜMLER","AYARLAR"};
+            for(int i=0;i<tabCaptions.Count;i++)
+            {
+                tabCaptions[i].text=GamePreferences.Translate(labels[i]);
+                var rect=tabFaces[i].rectTransform;
+                rect.anchoredPosition=new Vector2(nativeTabLines[i].x,27);
+                rect.sizeDelta=new Vector2(GamePreferences.English?Mathf.Min(160,Mathf.Ceil(tabCaptions[i].preferredWidth)):nativeTabLines[i].y,7);
             }
         }
         public void ShowPage(int tab)
@@ -219,7 +245,21 @@ namespace Rollic.BusJam
         {
             Text(page,"NASIL OYNANIR?",43,new Vector2(0,-70),new Vector2(720,90));
             string[] titles={"YOLU AÇ","RENGİNİ EŞLEŞTİR","OTOBÜSÜ DOLDUR"};string[] descriptions={"Yolu açık yolculara dokun.","Otobüsle aynı renkte olanlar biner.\nDiğerleri bekleme alanına geçer.","Süre bitmeden tüm yolcuları bindir."};
-            for(int i=0;i<3;i++){float y=-345-i*155;var badge=Plate(page,"Step "+(i+1),new Vector2(.5f,1),new Vector2(-280,y),Vector2.one*64,gold,new Color(1,.57f,.04f),true);Text(badge.transform,(i+1).ToString(),34,new Vector2(0,-32),Vector2.one*60);Text(page,titles[i],31,new Vector2(0,y+23),new Vector2(470,55));Text(page,descriptions[i],25,new Vector2(0,y-(i==1?38:22)),new Vector2(470,94),new Color(.84f,.96f,1),false);}
+            const float titleHeight=55f,descriptionGap=8f,stepGap=32f;
+            float stepTop=-294f;
+            for(int i=0;i<3;i++)
+            {
+                Text(page,titles[i],31,new Vector2(0,stepTop-titleHeight*.5f),new Vector2(470,titleHeight));
+                var description=Text(page,descriptions[i],25,Vector2.zero,new Vector2(470,94),new Color(.84f,.96f,1),false);
+                description.alignment=TextAnchor.UpperCenter;
+                float descriptionHeight=description.preferredHeight;
+                description.rectTransform.sizeDelta=new Vector2(470,descriptionHeight);
+                description.rectTransform.anchoredPosition=new Vector2(0,stepTop-titleHeight-descriptionGap-descriptionHeight*.5f);
+                float stepHeight=titleHeight+descriptionGap+descriptionHeight;
+                var badge=Plate(page,"Step "+(i+1),new Vector2(.5f,1),new Vector2(-280,stepTop-stepHeight*.5f),Vector2.one*64,gold,new Color(1,.57f,.04f),true);
+                Text(badge.transform,(i+1).ToString(),34,new Vector2(0,-32),Vector2.one*60);
+                stepTop-=stepHeight+stepGap;
+            }
             Button(page,"OYUNA DEVAM ET",new Vector2(.5f,1),new Vector2(0,-810),new Vector2(570,90),new Color(.58f,.94f,.16f),new Color(.20f,.69f,.05f),play);
         }
         void Garage()
@@ -261,11 +301,11 @@ namespace Rollic.BusJam
             var top=new Color(.22f,.77f,1);var amber=new Color(1,.72f,.20f);
             void Option(string caption,int row,Action action,bool warning=false)
             {
-                var button=Button(page,caption,new Vector2(.5f,1),new Vector2(0,-350-row*150),new Vector2(610,80),warning?amber:top,warning?new Color(.95f,.43f,.06f):blue,action,32);
+                var button=Button(page,caption,new Vector2(.5f,1),new Vector2(0,-350-row*150),new Vector2(630,100),warning?amber:top,warning?new Color(.95f,.43f,.06f):blue,action,34);
                 var label=button.GetComponentInChildren<Text>();
-                label.fontSize=32;label.resizeTextForBestFit=false;label.alignment=TextAnchor.MiddleCenter;label.alignByGeometry=true;
+                label.fontSize=34;label.resizeTextForBestFit=false;label.alignment=TextAnchor.MiddleCenter;label.alignByGeometry=true;
                 var rect=label.rectTransform;rect.anchorMin=rect.anchorMax=rect.pivot=new Vector2(.5f,.5f);
-                rect.sizeDelta=new Vector2(540,68);rect.anchoredPosition=new Vector2(0,1.2f);
+                rect.sizeDelta=new Vector2(560,88);rect.anchoredPosition=new Vector2(0,1.5f);
             }
             Option(GamePreferences.English?"DİL: İNGİLİZCE":"DİL: TÜRKÇE",0,()=>{GamePreferences.Set("Language",GamePreferences.English?0:1);ShowPage(4);});
             Option(GamePreferences.Sound?"SES: AÇIK":"SES: KAPALI",1,()=>{GamePreferences.Set("Sound",GamePreferences.Sound?0:1);ShowPage(4);});

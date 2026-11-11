@@ -52,6 +52,7 @@ namespace Rollic.BusJam
         readonly List<PassengerTransit> inFlight=new List<PassengerTransit>();
         readonly List<PassengerData> acceptedMoves=new List<PassengerData>();
         float nextAutoSave;
+        bool awaitingResumeTap;int resumeTapFrame;
         Phase phase;
         bool busy,enteringGameplay;
         Image transitionCurtain;
@@ -234,19 +235,35 @@ namespace Rollic.BusJam
             DrawBus();
             DrawEntrances();
             DrawStationLamps();
+            DrawPlazaPerimeterLights();
             TrimRearSlots();
         }
         void DrawStationLamps()
         {
             var halo=new Material(Resources.Load<Shader>("MenuArt/MenuLampGlow"));materials.Add(halo);
-            foreach(float z in new[]{-3.8f,1.1f,6.9f})foreach(int side in new[]{-1,1})
+            foreach(float x in new[]{-3.3f,-1.1f,1.1f,3.3f})
             {
-                var lamp=new GameObject("Station evening lamp").transform;lamp.SetParent(world,false);lamp.localPosition=new Vector3(side*3.70f,0,z);
+                var lamp=new GameObject("Station evening lamp").transform;lamp.SetParent(world,false);lamp.localPosition=new Vector3(x,0,10.12f);
                 Shape("Lamp base",PrimitiveType.Cube,lamp,new Vector3(0,.07f,0),new Vector3(.28f,.14f,.30f),new Color(.21f,.28f,.35f));
-                Shape("Lamp pole",PrimitiveType.Cylinder,lamp,new Vector3(0,1.12f,0),new Vector3(.065f,1.12f,.065f),new Color(.18f,.26f,.34f));
-                Shape("Gold lamp cap",PrimitiveType.Cube,lamp,new Vector3(-side*.12f,2.22f,0),new Vector3(.43f,.09f,.25f),new Color(1,.74f,.24f));
-                var bulb=Shape("Warm station lamp",PrimitiveType.Cube,lamp,new Vector3(-side*.12f,2.12f,0),new Vector3(.31f,.15f,.18f),new Color(1,.94f,.69f));bulb.GetComponent<Renderer>().sharedMaterial.SetFloat("_LampEmission",1);
-                var glow=Shape("Station lamp glow",PrimitiveType.Quad,lamp,new Vector3(-side*.12f,2.12f,0),Vector3.one*.80f,Color.white);glow.rotation=cam.transform.rotation;glow.position-=cam.transform.forward*.12f;glow.GetComponent<Renderer>().sharedMaterial=halo;
+                Shape("Lamp pole",PrimitiveType.Cylinder,lamp,new Vector3(0,.80f,0),new Vector3(.065f,.80f,.065f),new Color(.18f,.26f,.34f));
+                Shape("Gold lamp cap",PrimitiveType.Cube,lamp,new Vector3(0,1.62f,0),new Vector3(.43f,.09f,.25f),new Color(1,.74f,.24f));
+                var bulb=Shape("Warm station lamp",PrimitiveType.Cube,lamp,new Vector3(0,1.52f,0),new Vector3(.31f,.15f,.18f),new Color(1,.94f,.69f));bulb.GetComponent<Renderer>().sharedMaterial.SetFloat("_LampEmission",1);
+                var glow=Shape("Station lamp glow",PrimitiveType.Quad,lamp,new Vector3(0,1.52f,0),Vector3.one*.80f,Color.white);glow.rotation=cam.transform.rotation;glow.position-=cam.transform.forward*.12f;glow.GetComponent<Renderer>().sharedMaterial=halo;
+                var pool=Shape("Warm pavement light",PrimitiveType.Quad,lamp,new Vector3(0,.071f,0),new Vector3(2.0f,2.2f,1),Color.white);pool.localRotation=Quaternion.Euler(90,0,0);pool.GetComponent<Renderer>().sharedMaterial=halo;
+                foreach(var collider in lamp.GetComponentsInChildren<Collider>()){collider.gameObject.layer=2;Destroy(collider);}
+            }
+        }
+        void DrawPlazaPerimeterLights()
+        {
+            var halo=new Material(Resources.Load<Shader>("MenuArt/MenuLampGlow"));materials.Add(halo);
+            foreach(int side in new[]{-1,1})foreach(float z in new[]{2.3f,-.5f,-3.2f,-5.9f})
+            {
+                var lamp=new GameObject("Plaza perimeter light").transform;lamp.SetParent(world,false);lamp.localPosition=new Vector3(side*3.76f,0,z);
+                Shape("Border light base",PrimitiveType.Cube,lamp,new Vector3(0,.08f,0),new Vector3(.23f,.16f,.25f),new Color(.13f,.22f,.32f));
+                Shape("Gold border cap",PrimitiveType.Cube,lamp,new Vector3(0,.34f,0),new Vector3(.27f,.065f,.27f),new Color(1,.78f,.23f));
+                var bulb=Shape("Warm border lantern",PrimitiveType.Cube,lamp,new Vector3(0,.24f,0),new Vector3(.20f,.17f,.20f),new Color(1,.94f,.73f));bulb.GetComponent<Renderer>().sharedMaterial.SetFloat("_LampEmission",1);
+                var glow=Shape("Border lantern glow",PrimitiveType.Quad,lamp,new Vector3(0,.27f,0),Vector3.one*.62f,Color.white);glow.rotation=cam.transform.rotation;glow.position-=cam.transform.forward*.08f;glow.GetComponent<Renderer>().sharedMaterial=halo;
+                var pool=Shape("Border light spill",PrimitiveType.Quad,lamp,new Vector3(0,.071f,0),new Vector3(2.4f,3.2f,1),Color.white);pool.localRotation=Quaternion.Euler(90,0,0);pool.GetComponent<Renderer>().sharedMaterial=halo;
                 foreach(var collider in lamp.GetComponentsInChildren<Collider>()){collider.gameObject.layer=2;Destroy(collider);}
             }
         }
@@ -254,7 +271,11 @@ namespace Rollic.BusJam
         void TrimRearSlots()
         {
             var occupied=new HashSet<Vector2Int>();
-            foreach(var p in data.people)if(!arriving.Contains(p))occupied.Add(new Vector2Int(p.x,p.y));
+            // Reserve the visible tile while its next passenger is queued or walking in.
+            foreach(var p in data.people)occupied.Add(new Vector2Int(p.x,p.y));
+            for(int i=0;i<level.entrances.Count;i++)
+                if(data.entrances[i]<level.entrances[i].colors.Count)
+                    occupied.Add(EntranceRules.EntryCell(level,level.entrances[i].column));
             foreach(var tile in rearSlotViews)if(tile.Value)tile.Value.gameObject.SetActive(occupied.Contains(tile.Key));
         }
         readonly Queue<PassengerData> entranceQueue=new Queue<PassengerData>();
@@ -315,7 +336,7 @@ namespace Rollic.BusJam
         IEnumerator AnimateEntranceDoor(Transform door,bool open)
         {
             float from=door.localScale.x,to=open?.10f:.77f,elapsed=0;
-            while(elapsed<.12f){if(phase==Phase.Playing){elapsed+=Time.deltaTime;door.localScale=new Vector3(Mathf.Lerp(from,to,Mathf.SmoothStep(0,1,elapsed/.12f)),.66f,.08f);}yield return null;}
+            while(elapsed<.12f){if(phase==Phase.Playing&&!awaitingResumeTap){elapsed+=Time.deltaTime;door.localScale=new Vector3(Mathf.Lerp(from,to,Mathf.SmoothStep(0,1,elapsed/.12f)),.66f,.08f);}yield return null;}
             door.localScale=new Vector3(to,.66f,.08f);
         }
         IEnumerator EnterStation(PassengerData passenger,Transform root,Vector3 target,int gate,List<Vector2Int> path)
@@ -324,7 +345,7 @@ namespace Rollic.BusJam
             bool blocked=true;
             while(blocked)
             {
-                blocked=phase!=Phase.Playing||entranceQueue.Count==0||entranceQueue.Peek()!=passenger;
+                blocked=phase!=Phase.Playing||awaitingResumeTap||entranceQueue.Count==0||entranceQueue.Peek()!=passenger;
                 foreach(var other in inFlight)if(other.root&&!other.completed&&((other.root.position-target).sqrMagnitude<.65f*.65f||other.path.Contains(new Vector2Int(passenger.x,passenger.y))))blocked=true;
                 if(blocked)yield return null;
             }
@@ -372,7 +393,7 @@ namespace Rollic.BusJam
             float elapsed=0,duration=.34f*Mathf.Abs(target-from);
             while(elapsed<duration)
             {
-                if(phase!=Phase.Playing){yield return null;continue;}
+                if(phase!=Phase.Playing||awaitingResumeTap){yield return null;continue;}
                 elapsed+=Time.deltaTime;
                 float t=Mathf.Clamp01(elapsed/duration);
                 model.SetDoorOpening(Mathf.Lerp(from,target,t*t*(3-2*t)));
@@ -409,7 +430,7 @@ namespace Rollic.BusJam
             float elapsed=0;
             while(elapsed<.75f)
             {
-                if(phase!=Phase.Playing){yield return null;continue;}
+                if(phase!=Phase.Playing||awaitingResumeTap){yield return null;continue;}
                 elapsed+=Time.deltaTime;float t=Mathf.Clamp01(elapsed/.75f);t=t*t*(3-2*t);
                 bus.position=Vector3.Lerp(front,new Vector3(0,0,BusStopZ),t);
                 if(queuedBus)queuedBus.position=Vector3.Lerp(rear,new Vector3(BusQueueX,0,BusStopZ),t);
@@ -866,7 +887,7 @@ namespace Rollic.BusJam
             busy=false;
             transaction=null;
             ClearSelections();
-            level=levels[index];
+            level=levels[index];awaitingResumeTap=false;
             data=new SaveData
             {
                 revision=4,entrances=EntranceRules.Initial(level),timerStarted=false,level=index,time=level.seconds,people=new List<PassengerData>(),waiting=new List<int>()
@@ -938,7 +959,8 @@ namespace Rollic.BusJam
             headerHUD.SetActive(true);
             footerHUD.SetActive(true);SetHUDInteraction(true);
             if(transitionCurtain){transitionCurtain.raycastTarget=false;transitionCurtain.gameObject.SetActive(false);Destroy(transitionCurtain.gameObject);transitionCurtain=null;}
-            phase=Phase.Playing;JellyPassenger.AnimationPaused=false;UpdatePauseControl(false);
+            awaitingResumeTap=data.timerStarted;resumeTapFrame=Time.frameCount+1;
+            phase=Phase.Playing;JellyPassenger.AnimationPaused=awaitingResumeTap;UpdatePauseControl(false);Refresh();
             if(data.bus>=level.buses.Count)Finish(true);
             else if(data.time<=0||data.waiting.Count>=level.waitingSlots)Finish(false);
         }
@@ -946,10 +968,22 @@ namespace Rollic.BusJam
         {
             if(errorHandler&&errorHandler.IsShowing)return;
             UpdateHUDSafeArea();
-            JellyPassenger.AnimationPaused=phase!=Phase.Playing;
+            JellyPassenger.AnimationPaused=phase!=Phase.Playing||awaitingResumeTap;
             if(data==null)return;
             if(phase==Phase.Playing)
             {
+                if(awaitingResumeTap)
+                {
+                    bool pressed=Pointer.current!=null&&Pointer.current.press.wasPressedThisFrame;
+                    bool overUI=false;
+                    if(pressed&&EventSystem.current!=null)
+                    {
+                        var hits=new List<RaycastResult>();
+                        EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current){position=Pointer.current.position.ReadValue()},hits);overUI=hits.Count>0;
+                    }
+                    if(Time.frameCount<=resumeTapFrame||!pressed||overUI){Refresh();return;}
+                    awaitingResumeTap=false;JellyPassenger.AnimationPaused=false;
+                }
                 if(data.timerStarted)data.time=Mathf.Max(0,data.time-Time.deltaTime);
                 if(Time.unscaledTime>=nextAutoSave)
                 {
@@ -983,7 +1017,7 @@ namespace Rollic.BusJam
         }
         void Select(PassengerData p)
         {
-            if(phase!=Phase.Playing||arriving.Contains(p)||!data.people.Contains(p)||!views.TryGetValue(p,out var root))return;
+            if(phase!=Phase.Playing||awaitingResumeTap||arriving.Contains(p)||!data.people.Contains(p)||!views.TryGetValue(p,out var root))return;
             var projected=Checkpoint();
             if(projected.time<0||projected.bus>=level.buses.Count||projected.waiting.Count>=level.waitingSlots)return;
             var path=PuzzleRules.Path(level,data.people,p);
@@ -1027,7 +1061,7 @@ namespace Rollic.BusJam
         }
         IEnumerator WalkStep(PassengerTransit transit,Vector3 target,float duration)
         {
-            while(phase!=Phase.Playing||LeaderBlocks(transit,target))yield return null;
+            while(phase!=Phase.Playing||awaitingResumeTap||LeaderBlocks(transit,target))yield return null;
             yield return Move(transit.root,target,duration);
         }
         IEnumerator WalkToBoardingLine(PassengerTransit transit)
@@ -1049,7 +1083,7 @@ namespace Rollic.BusJam
             while(selectionQueue.Count>0)
             {
                 var transit=selectionQueue.Peek();
-                while(!transit.ready||phase!=Phase.Playing)yield return null;
+                while(!transit.ready||phase!=Phase.Playing||awaitingResumeTap)yield return null;
                 var t=transit.root;
                 if(!transit.earlyWaiting)yield return Move(t,new Vector3(t.position.x,0,BoardingCorridorZ),.2f);
                 if(transit.passenger.color==level.buses[data.bus])
@@ -1078,7 +1112,7 @@ namespace Rollic.BusJam
             float elapsed=0;
             while(elapsed<duration)
             {
-                if(phase!=Phase.Playing)
+                if(phase!=Phase.Playing||awaitingResumeTap)
                 {
                     yield return null;
                     continue;
@@ -1143,7 +1177,7 @@ namespace Rollic.BusJam
             timerFill.rectTransform.anchorMax=new Vector2(Mathf.Clamp01(data.time/level.seconds),1);
             timerFill.color=data.time<20?Palette[0]:Palette[2];
             progressLabel.text="";
-            statusLabel.text=GamePreferences.Translate(selectionQueue.Count>1?"Seçilen yolcular: "+selectionQueue.Count+" • Seçmeye devam edebilirsin":"Tap a passenger with a clear route to the road");
+            statusLabel.text=GamePreferences.Translate(awaitingResumeTap?(GamePreferences.English?"Tap the screen to continue.":"Devam etmek için ekrana dokun."):selectionQueue.Count>1?"Seçilen yolcular: "+selectionQueue.Count+" • Seçmeye devam edebilirsin":"Tap a passenger with a clear route to the road");
             busLabel.text=GamePreferences.Translate(data.bus<level.buses.Count?ColorNames[level.buses[data.bus]]+" BUS  "+data.seats+"/"+level.busCapacity+"     •     WAITING  "+data.waiting.Count+"/"+level.waitingSlots:"ALL ABOARD!");
         }
         void Pause()
