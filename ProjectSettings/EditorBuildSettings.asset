@@ -6,7 +6,10 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/Scenes/BusJam.unity
+    guid: 97210247c1b14421a9f5b638f87359a3
+  - enabled: 0
+    path: Assets/Scenes/LevelEditor.unity
+    guid: a0d4fc59b66da43a29a4f893b05e971d
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
