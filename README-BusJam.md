@@ -43,7 +43,7 @@ Install the desired platform support through Unity Hub before switching targets.
 
 Progress is saved after accepted moves, periodically during play, when opening menus, when backgrounded and on shutdown. The save contains the level, remaining passengers, waiting queue, bus, seats, timer state and entrance queues. In-flight accepted actions restore as completed logical actions; visual animation positions are not replayed.
 
-Lives start at **10**, with a maximum of 10. Restarting costs one life after confirmation. One life recharges every four hours, including time spent offline. The current update includes a one-time top-up of existing life balances to 10; it does not replenish lives on every launch.
+Lives start at **10**, with a maximum of 10. Restarting costs one life after confirmation. One life recharges every four hours, including time spent offline. The 12 November 2026 release includes a one-time top-up of existing life balances to 10 (including saves that received the earlier ten-life grant); it does not replenish lives on every launch.
 
 Settings provide Turkish / English, background music on / off, and light / dark themes. Preferences persist. Street and station lamps illuminate the scene in dark mode; their state follows the selected theme, not the device clock.
 

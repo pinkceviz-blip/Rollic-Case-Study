@@ -12,9 +12,9 @@ namespace Rollic.BusJam
         // Explicit UTC makes offline recharge deterministic and independently testable.
         public static State Refresh(long now)
         {
-            if(PlayerPrefs.GetInt("Rollic.BusJam.Lives.TenLivesGrant",0)==0)
+            if(PlayerPrefs.GetInt("Rollic.BusJam.Lives.ReleaseTopUp.20261112",0)==0)
             {
-                PlayerPrefs.SetInt("Rollic.BusJam.Lives.TenLivesGrant",1);Store(Maximum,0);
+                PlayerPrefs.SetInt("Rollic.BusJam.Lives.ReleaseTopUp.20261112",1);Store(Maximum,0);
             }
             int stored=PlayerPrefs.GetInt(CountKey,Maximum),count=Mathf.Clamp(stored,0,Maximum);
             long.TryParse(PlayerPrefs.GetString(NextKey,"0"),NumberStyles.Integer,CultureInfo.InvariantCulture,out long next);
