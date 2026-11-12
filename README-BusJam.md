@@ -2,12 +2,32 @@
 
 A portrait Unity puzzle game: select passengers with a clear route, match them to the current bus, and manage the limited waiting area before time runs out.
 
-## Run
+## Installation and first run
 
-- Unity **6000.6.0f1**, Universal Render Pipeline, Input System and uGUI.
-- Open `Assets/Scenes/BusJam.unity`, choose a portrait Game view, and press Play.
-- Use **Play / Continue** on the main menu. Touch and mouse input are supported.
-- If needed, **Bus Jam → Install or open game** sets up the game and editor scenes. Existing level assets are preserved.
+1. Install **Unity Hub** and Unity Editor **6000.6.0f1**. This exact version is recorded in `ProjectSettings/ProjectVersion.txt`.
+2. Clone the repository (GitHub access is required while it is private):
+   ```sh
+   git clone https://github.com/pinkceviz-blip/Rollic-Case-Study.git
+   cd Rollic-Case-Study
+   ```
+3. In Unity Hub, select **Add → Add project from disk** and choose the cloned folder containing `Assets`, `Packages`, and `ProjectSettings`.
+4. Open it with **6000.6.0f1**. Allow the first asset import and Package Manager restore to finish. Internet is needed for the initial package restore; dependencies and locked versions are included in `Packages`.
+5. Open `Assets/Scenes/BusJam.unity`. Set Game view to a portrait resolution such as **1080 × 1920**, then press **Play**.
+6. Select **PLAY** (or **CONTINUE** for an existing save). Settings allow Turkish / English, sound and light / dark mode. Mouse and touch input are supported.
+
+If the scene has not been set up, use **Bus Jam → Install or open game**. Existing level assets are preserved. Do not clone the repository inside another Unity project; open the repository root itself.
+
+The project uses Universal Render Pipeline, Input System and uGUI. Unity restores the packages automatically. No API keys, paid services or backend configuration are required for local play. `Library`, `Temp`, logs and local editor settings are generated on the receiving machine and are intentionally excluded from Git.
+
+### Building
+
+Install the desired platform support through Unity Hub before switching targets. In **File → Build Profiles**, select the target, ensure `Assets/Scenes/BusJam.unity` is enabled in the scene list, and build to a directory outside `Assets` (for example `Builds`). `LevelEditor.unity` is an editor-only scene and must stay disabled. Android requires Android Build Support and its SDK/NDK/OpenJDK modules; iOS requires iOS Build Support and Xcode on macOS for the exported project. Store signing, device performance and store submission are not configured or verified by this repository.
+
+### Troubleshooting
+
+- Wait for compilation/import to complete before pressing Play; use the required editor version if package or compilation errors appear.
+- If keyboard or pointer input does not reach the game, focus the Game view; the project already includes Input System settings.
+- Saved progress and preferences persist between launches via local PlayerPrefs. **Bus Jam → Reset saved progress** clears the active level save; it does not uninstall the game.
 
 ## Gameplay
 
@@ -55,6 +75,17 @@ The editor scene is `Assets/Scenes/LevelEditor.unity` and is excluded from the p
 - `Assets/BusJam/Resources`: runtime art, fonts, prefabs, shaders and illustrated UI.
 
 ## Validation
+
+Latest checks (12 November 2026) used an isolated Unity project with the current game sources, leaving the original player save untouched:
+
+- All ten levels passed the built-in solver and rule validation; runtime shaders compiled.
+- English / Turkish LEVEL and LIVES heading centers and heights matched; guide descriptions fit their measured text areas; all five menu pages opened.
+- Ten initial lives, zero-life spending protection, the exact four-hour recharge boundary and offline refill cap passed.
+- Saved, paused and menu-resumed games held their countdown until an actual gameplay tap; fresh games still waited for the first valid move.
+- Seven immediate selections, duplicate protection, concurrent walking, FIFO boarding, mid-animation restore, waiting-capacity reservations and reset cancellation passed.
+
+The isolated editor emitted a Unity Quick Search indexing exception on startup; its stack was inside `UnityEditor.Search`, and the game validation and play-mode checks still completed successfully.
+
 
 Validated in an isolated Unity editor project: all ten level definitions, runtime completion of entrance levels 5–10 under the current refill rule, occupied-cell-only passenger squares, rapid input, duplicate input protection, mid-animation save/load, first-move timer, life recharge boundaries, settings, error recovery and repeated mouse/simulated-touch UI cycles. Menu reuse was checked for stable generated meshes/materials and no scheduled background rendering under popups.
 

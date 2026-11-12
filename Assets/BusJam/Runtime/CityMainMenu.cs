@@ -119,11 +119,12 @@ namespace Rollic.BusJam
             Hit(hud,"Profil",new Vector2(.5f,.5f),new Vector2(-354,0),new Vector2(124,141),()=>ShowPage(2));
             Hit(hud,"HAK SÜRESİ",new Vector2(.5f,.5f),new Vector2(354,0),new Vector2(124,141),ShowLivesRecharge);
             clockShade=Plate(hud,"Recharge clock dim",new Vector2(.5f,.5f),new Vector2(354,0),new Vector2(128,134),Color.white,Color.white,true);
-            var levelCaptionBack=Plate(hud,"Level caption background",new Vector2(.5f,1),new Vector2(-105,-29),new Vector2(155,44),new Color(.025f,.31f,.76f),new Color(.025f,.31f,.76f));
+            var levelCaptionBack=Plate(hud,"Level caption background",new Vector2(.5f,1),new Vector2(-105,-29),new Vector2(155,38),new Color(.025f,.31f,.76f),new Color(.025f,.31f,.76f));
             levelCaptionBack.gameObject.AddComponent<EnglishOnlyLabel>();
-            var levelTitle=Text(levelCaptionBack.transform,"BÖLÜM",24,new Vector2(0,-22),new Vector2(155,44),new Color(1,.94f,.76f));levelTitle.alignByGeometry=true;
-            levelTitle.verticalOverflow=VerticalWrapMode.Overflow;
+            var levelTitle=Text(levelCaptionBack.transform,"BÖLÜM",24,new Vector2(0,-19),new Vector2(155,38),new Color(1,.94f,.76f));levelTitle.alignByGeometry=true;
+            levelTitle.verticalOverflow=VerticalWrapMode.Truncate;
             var levelTitleOutline=levelTitle.GetComponent<Outline>();levelTitleOutline.effectColor=new Color(.24f,.13f,.055f,.95f);levelTitleOutline.effectDistance=new Vector2(1,-2);
+            var levelTitleShadow=levelTitle.gameObject.AddComponent<Shadow>();levelTitleShadow.effectColor=new Color(.10f,.05f,.015f,.65f);levelTitleShadow.effectDistance=new Vector2(1,-3);
             var levelValue=Text(hud,(current+1)+" / "+total,32,new Vector2(-105,-70.5f),new Vector2(170,50));levelValue.alignByGeometry=true;
             var heartTitle=Text(hud,"KALAN HAK",24,new Vector2(95,-29),new Vector2(200,38),new Color(1,.94f,.76f));heartTitle.alignByGeometry=true;
             var titleOutline=heartTitle.GetComponent<Outline>();titleOutline.effectColor=new Color(.24f,.13f,.055f,.95f);titleOutline.effectDistance=new Vector2(1,-2);
